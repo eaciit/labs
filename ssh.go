@@ -34,36 +34,11 @@ func Connect() (*ssh.Client, error) {
 	return client, e
 }
 
-func SendCommand(s *ssh.Session, cmd string) {
-	bs, e := s.Output(cmd)
-	if e != nil {
-		fmt.Println("Fail to send command: " + cmd + " => " + e.Error())
-	} else {
-		fmt.Println(string(bs))
-	}
-}
-
-func SendCmd(cmd string, w io.WriteCloser, r io.Reader) {
-	var e error
-	if _, e = w.Write([]byte(cmd)); e != nil {
-		fmt.Printf("Unable to run command %s : %s \n", cmd, e.Error())
-		return
-	}
-
-	var out []byte
-	if _, e = r.Read(out); e != nil {
-		fmt.Printf("Unable to read output %s : %s \n", cmd, e.Error())
-		return
-	} else {
-		fmt.Println(string(out))
-	}
-}
-
-func MuxShell(w io.Writer, r io.Reader) (chan<- string, <-chan string) {
+func TermInOut(w io.Writer, r io.Reader) (chan<- string, <-chan string) {
 	in := make(chan string, 1)
 	out := make(chan string, 1)
 	var wg sync.WaitGroup
-	wg.Add(1) //for the shell itself
+	wg.Add(1)
 	go func() {
 		for cmd := range in {
 			wg.Add(1)
@@ -73,7 +48,7 @@ func MuxShell(w io.Writer, r io.Reader) (chan<- string, <-chan string) {
 	}()
 	go func() {
 		var (
-			buf [65 * 1024]byte
+			buf [1024 * 1024]byte
 			t   int
 		)
 		for {
@@ -84,7 +59,7 @@ func MuxShell(w io.Writer, r io.Reader) (chan<- string, <-chan string) {
 				return
 			}
 			t += n
-			if buf[t-2] == '$' { //assuming the $PS1 == 'sh-4.3$ '
+			if buf[t-2] == '$' {
 				out <- string(buf[:t])
 				t = 0
 				wg.Done()
@@ -109,9 +84,9 @@ func main() {
 	defer s.Close()
 
 	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,     // disable echoing
-		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
-		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
+		ssh.ECHO:          0,
+		ssh.TTY_OP_ISPEED: 14400,
+		ssh.TTY_OP_OSPEED: 14400,
 	}
 
 	if e = s.RequestPty("xterm", 80, 40, modes); e != nil {
@@ -123,31 +98,13 @@ func main() {
 
 	w, _ := s.StdinPipe()
 	r, _ := s.StdoutPipe()
-	/*
-		if e = s.Start("/bin/sh"); e != nil {
-			fmt.Println("Unable to start shell: " + e.Error())
-			return
-		}
-		for _, c := range commands {
-			SendCmd(c, w, r)
-		}
-		s.Wait()
 
-			s, _ = c.NewSession()
-			SendCommand(s, "cd /data/goapp/src")
-
-			s, _ = c.NewSession()
-			SendCommand(s, "pwd")
-	*/
-	//SendCommand(s, "ls -al")
-
-	in, out := MuxShell(w, r)
+	in, out := TermInOut(w, r)
 	if e = s.Start("/bin/sh"); e != nil {
 		fmt.Println("Unable to start shell: " + e.Error())
 		return
 	}
 
-	<-out //ignore the shell output
 	for _, c := range commands {
 		in <- c
 		outs := strings.Split(<-out, "\n")
