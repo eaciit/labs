@@ -14,6 +14,7 @@ type Employee struct {
 
 func main() {
 	//emp := new(Employee)
+	//var emps interface{}
 	emps := tk.MakeSlice(&Employee{}).([]*Employee)
 	fillArray(&emps)
 	fmt.Printf("Value of empls:\n%s\n", tk.JsonString(emps))
