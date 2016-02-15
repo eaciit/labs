@@ -34,15 +34,13 @@ func main() {
 	bufin := bufio.NewWriter(stdin)
 	bufout := bufio.NewReader(stdout)
 
-	go func() {
-		for i := 1; i <= 10; i++ {
-			fmt.Println("Attempt sending data ", i)
-			SendIn(bufin, fmt.Sprintf("Command-%d", i))
-			if i == 10 {
-				SendIn(bufin, "exit")
-			}
+	for i := 1; i <= 10; i++ {
+		fmt.Println("Attempt sending data ", i)
+		SendIn(bufin, fmt.Sprintf("Command-%d", i))
+		if i == 10 {
+			SendIn(bufin, "exit")
 		}
-	}()
+	}
 
 	for {
 		out := GetOut(bufout)
