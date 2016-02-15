@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 )
 
@@ -19,6 +18,7 @@ var check func(string, error) = func(what string, e error) {
 
 func main() {
 	cmd := exec.Command("go", "run", "loop.go")
+	//cmd := exec.Command("cat")
 	stdin, err := cmd.StdinPipe()
 	check("stdin", err)
 	defer stdin.Close()
@@ -74,8 +74,6 @@ func GetOut(bufout *bufio.Reader) string {
 		return "exit"
 	}
 	check("read", eread)
-	if strings.TrimSpace(bread) != "\n" {
-		fmt.Println("Read: ", bread)
-	}
+	fmt.Println("Read: ", bread)
 	return bread
 }
