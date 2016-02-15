@@ -22,8 +22,9 @@ func main() {
 
 	Printf("Original value: %s \n", JsonString(o))
 	// -- SerDe to from Obj to ms
-	ms := M{}
-	e := FromBytes(ToBytes(o, ""), "", &ms)
+	var ms map[string]interface{}
+	//e := FromBytes(ToBytes(o, ""), "", &ms)
+	e := Serde(o, &ms, "")
 	if e != nil {
 		Printf("Serde using bytes fail: %s\n", e.Error())
 		return
@@ -36,6 +37,7 @@ func main() {
 	ms["Created"] = time.Date(2013, 4, 1, 0, 0, 0, 0, time.Now().Location())
 
 	// -- Lets serde back from ms to o
-	e = FromBytes(ToBytes(ms, ""), "", o)
+	//e = FromBytes(ToBytes(ms, ""), "", o)
+	e = Serde(ms, &o, "")
 	Printf("Object value after serde and be changed on M: %s \n", JsonString(o))
 }
